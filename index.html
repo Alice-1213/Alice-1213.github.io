@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>E2-W1 复习系统 - Review System</title>
+
+    <style>
+        :root {
+            --primary-color: #0056b3;
+            --secondary-color: #eef2f5;
+            --text-color: #333;
+            --card-bg: #ffffff;
+            --accent-color: #28a745;
+            --accent-text: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 20px;
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 { color: var(--primary-color); margin-bottom: 10px; text-align: center; }
+        h2 { color: #666; font-size: 1.2rem; margin-top: 0; margin-bottom: 28px; text-align: center; }
+
+        .nav-bar {
+            margin-bottom: 30px;
+            background: white;
+            padding: 10px;
+            border-radius: 50px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.10);
+        }
+        .nav-btn {
+            border: none;
+            background: none;
+            padding: 10px 22px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 25px;
+            transition: all 0.3s;
+            font-weight: bold;
+            color: #555;
+        }
+        .nav-btn.active {
+            background-color: var(--accent-color);
+            color: var(--accent-text);
+            box-shadow: 0 2px 5px rgba(40, 167, 69, 0.35);
+        }
+
+        .view-section {
+            display: none;
+            width: 100%;
+            max-width: 1080px;
+            animation: fadeIn 0.5s;
+        }
+        .view-section.active { display: block; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .category-title {
+            font-size: 1.4rem;
+            color: #1f6b35;
+            border-left: 6px solid var(--accent-color);
+            padding-left: 14px;
+            margin: 26px 0 14px 0;
+            font-weight: 800;
+        }
+
+        .vocab-table-container {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.06);
+            margin-bottom: 22px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 14px 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+            vertical-align: top;
+        }
+        th {
+            background-color: var(--accent-color);
+            color: var(--accent-text);
+            font-weight: 700;
+        }
+        tr:hover { background-color: #f9f9f9; }
+
+        .chn-text { font-size: 1.15rem; font-weight: 800; color: #1b1b1b; }
+        .pinyin { color: #666; font-size: 0.95rem; }
+        .eng { color: #777; font-style: italic; }
+        .note {
+            display: inline-block;
+            margin-top: 6px;
+            padding: 6px 10px;
+            background: #eef7f0;
+            border-left: 4px solid var(--accent-color);
+            border-radius: 8px;
+            color: #2a6b3e;
+            font-size: 0.95rem;
+            line-height: 1.35;
+        }
+
+        .radical-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
+        .radical-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.06);
+            padding: 14px 16px;
+            border: 1px solid #eef2f5;
+        }
+        .radical-head {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .radical {
+            font-size: 2rem;
+            font-weight: 900;
+            color: var(--accent-color);
+        }
+        .radical-name {
+            font-weight: 800;
+            color: #2d2d2d;
+        }
+        .radical-line {
+            color: #444;
+            line-height: 1.55;
+        }
+        .radical-line small { color: #777; }
+
+        .flashcard-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            perspective: 1000px;
+        }
+        .card-toolbar {
+            width: 100%;
+            max-width: 680px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .mode-pill {
+            background: white;
+            border: 1px solid #ddd;
+            padding: 8px 12px;
+            border-radius: 999px;
+            cursor: pointer;
+            font-weight: 800;
+            color: #444;
+        }
+        .mode-pill:hover { background: #f3f3f3; }
+
+        .flashcard {
+            width: 680px;
+            height: 380px;
+            background-color: transparent;
+            cursor: pointer;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s;
+            margin-bottom: 14px;
+        }
+        .flashcard.is-flipped { transform: rotateY(180deg); }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 16px;
+            box-shadow: 0 5px 22px rgba(0,0,0,0.10);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 22px;
+            box-sizing: border-box;
+            border: 1px solid #e8e8e8;
+        }
+        .card-front {
+            background-color: white;
+            color: #1f6b35;
+            border: 2px solid var(--accent-color);
+        }
+        .card-back {
+            background-color: #fafafa;
+            transform: rotateY(180deg);
+            text-align: center;
+        }
+
+        .fc-main { font-size: 3.2rem; font-weight: 900; margin-bottom: 10px; }
+        .fc-sub { font-size: 1.15rem; color: #555; margin-bottom: 12px; }
+        .fc-english { font-size: 1.15rem; color: #777; margin-bottom: 16px; font-style: italic; }
+        .fc-example {
+            font-size: 1.02rem;
+            color: #333;
+            background: #eef2f5;
+            padding: 14px 16px;
+            border-radius: 10px;
+            width: 95%;
+            line-height: 1.5;
+        }
+        .fc-example small { display: block; margin-top: 6px; color: #777; font-size: 0.92rem; }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-top: 6px;
+        }
+        .ctrl-btn {
+            background-color: white;
+            border: 1px solid #ddd;
+            padding: 10px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 900;
+            color: #555;
+        }
+        .ctrl-btn:hover { background-color: #eee; transform: translateY(-2px); }
+
+        .progress-fixed {
+            position: fixed;
+            left: 18px;
+            bottom: 16px;
+            background: rgba(255,255,255,0.95);
+            border: 1px solid #e6e6e6;
+            border-radius: 999px;
+            padding: 8px 12px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+            color: #666;
+            font-weight: 900;
+            display: none;
+            z-index: 999;
+        }
+
+        .tip {
+            text-align:center;
+            color:#999;
+            font-size:0.95rem;
+            margin-top: 18px;
+        }
+
+        @media (max-width: 900px) {
+            .radical-grid { grid-template-columns: 1fr; }
+            .flashcard { width: 92vw; height: 460px; }
+            .card-toolbar { max-width: 92vw; }
+            .nav-btn { padding: 8px 14px; font-size: 14px; }
+            th, td { padding: 12px; }
+            .fc-main { font-size: 2.6rem; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>E2-W1 复习系统</h1>
+    <h2>E2-W1 Review System</h2>
+
+    <div class="nav-bar">
+        <button class="nav-btn active" onclick="switchMode('list')">📚 词汇复习 (Vocabulary)</button>
+        <button class="nav-btn" onclick="switchMode('radical')">🧩 汉字部件 (Characters)</button>
+        <button class="nav-btn" onclick="switchMode('card')">🗂️ 闪卡 (Flashcards)</button>
+    </div>
+
+    <div id="listView" class="view-section active">
+        <div class="category-title">词汇 (Vocabulary)</div>
+        <div class="vocab-table-container">
+            <table id="vocabTable">
+                <thead>
+                    <tr>
+                        <th width="12%">汉字</th>
+                        <th width="14%">拼音</th>
+                        <th width="16%">English</th>
+                        <th width="18%">Collocation</th>
+                        <th width="28%">Example</th>
+                        <th width="12%">Note</th>
+                    </tr>
+                </thead>
+                <tbody id="vocabListBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="radicalView" class="view-section">
+        <div class="category-title">部件 / 偏旁 (Components & Radicals)</div>
+        <div class="radical-grid" id="radicalGrid"></div>
+        <div class="tip">Tip: This page helps students connect character components with meaning and memory.</div>
+    </div>
+
+    <div id="cardView" class="view-section">
+        <div class="flashcard-container">
+            <div class="card-toolbar">
+                <button class="mode-pill" onclick="toggleFlashMode()">Mode: <span id="modeLabel">中译英 (CN→EN)</span></button>
+                <span style="color:#888;font-weight:800;">Click the card to flip; use ← → to move</span>
+            </div>
+
+            <div class="flashcard" onclick="flipCard(this)">
+                <div class="card-face card-front">
+                    <div class="fc-main" id="cardFrontMain">Loading…</div>
+                    <div class="fc-sub" id="cardFrontSub"></div>
+                </div>
+                <div class="card-face card-back">
+                    <div class="fc-sub" id="cardBackSub"></div>
+                    <div class="fc-english" id="cardBackEng"></div>
+                    <div class="fc-example" id="cardBackEx"></div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button class="ctrl-btn" onclick="prevCard()">← Prev</button>
+                <button class="ctrl-btn" onclick="nextCard()">Next →</button>
+            </div>
+        </div>
+
+        <div class="tip">Tip: Flashcards support both Chinese-to-English and English-to-Chinese modes.</div>
+    </div>
+
+    <div class="progress-fixed" id="cardProgressFixed">1 / 1</div>
+
+<script>
+    const lessonData = {
+        vocab: [
+            {
+                char: "季节",
+                pinyin: "jìjié",
+                eng: "season",
+                collocation: "四个季节",
+                ex: "一年有四个季节。<br><small>There are four seasons in a year.</small>",
+                note: ""
+            },
+            {
+                char: "春天",
+                pinyin: "chūntiān",
+                eng: "spring",
+                collocation: "三月到五月是春天",
+                ex: "这儿的三月到五月是春天。<br><small>March to May here is spring.</small>",
+                note: ""
+            },
+            {
+                char: "夏天",
+                pinyin: "xiàtiān",
+                eng: "summer",
+                collocation: "今年夏天",
+                ex: "今年夏天很热。<br><small>This summer is very hot.</small>",
+                note: ""
+            },
+            {
+                char: "秋天",
+                pinyin: "qiūtiān",
+                eng: "autumn",
+                collocation: "最喜欢秋天",
+                ex: "我最喜欢秋天，因为很凉快。<br><small>I like autumn best because it is cool.</small>",
+                note: ""
+            },
+            {
+                char: "冬天",
+                pinyin: "dōngtiān",
+                eng: "winter",
+                collocation: "爱丁堡的冬天",
+                ex: "爱丁堡的冬天一定很冷。<br><small>Winter in Edinburgh must be very cold.</small>",
+                note: ""
+            },
+            {
+                char: "热",
+                pinyin: "rè",
+                eng: "hot",
+                collocation: "很热",
+                ex: "今天三十度，很热。<br><small>Today it is 30 degrees, so it is very hot.</small>",
+                note: ""
+            },
+            {
+                char: "冷",
+                pinyin: "lěng",
+                eng: "cold",
+                collocation: "很冷",
+                ex: "今天零下五度，很冷。<br><small>Today it is minus five degrees, so it is very cold.</small>",
+                note: ""
+            },
+            {
+                char: "暖和",
+                pinyin: "nuǎnhuo",
+                eng: "warm",
+                collocation: "很暖和",
+                ex: "今天二十四度，很暖和。<br><small>Today it is 24 degrees, so it is warm.</small>",
+                note: ""
+            },
+            {
+                char: "凉快",
+                pinyin: "liángkuai",
+                eng: "cool",
+                collocation: "很凉快",
+                ex: "今天十度，很凉快。<br><small>Today it is 10 degrees, so it is cool.</small>",
+                note: ""
+            },
+            {
+                char: "温度",
+                pinyin: "wēndù",
+                eng: "temperature",
+                collocation: "最低温度 / 最高温度",
+                ex: "北京今天最低温度10度，最高温度14度。<br><small>Beijing’s lowest temperature today is 10 degrees, and the highest is 14 degrees.</small>",
+                note: ""
+            },
+            {
+                char: "度",
+                pinyin: "dù",
+                eng: "degree",
+                collocation: "二十度 / 零下十五度",
+                ex: "哈尔滨今天零下十度到零下七度。<br><small>Harbin is from minus ten degrees to minus seven degrees today.</small>",
+                note: "To ask the temperature: 昨天多少度？/ 昨天几度?"
+            },
+            {
+                char: "天气",
+                pinyin: "tiānqì",
+                eng: "weather",
+                collocation: "今天天气怎么样",
+                ex: "今天天气很好。<br><small>The weather is very good today.</small>",
+                note: "To ask about the weather: 今天天气怎么样？"
+            },
+            {
+                char: "晴天",
+                pinyin: "qíngtiān",
+                eng: "sunny day",
+                collocation: "",
+                ex: "今天是晴天。<br><small>Today is a sunny day.</small>",
+                note: ""
+            },
+            {
+                char: "阴天",
+                pinyin: "yīntiān",
+                eng: "cloudy day",
+                collocation: "",
+                ex: "今天是阴天。<br><small>Today is a cloudy day.</small>",
+                note: ""
+            },
+            {
+                char: "刮风",
+                pinyin: "guāfēng",
+                eng: "be windy / the wind blows",
+                collocation: "风很大",
+                ex: "昨天刮风了。<br><small>It was windy yesterday.</small><br>昨天风很大。<br><small>The wind was strong yesterday.</small>",
+                note: ""
+            },
+            {
+                char: "下雨",
+                pinyin: "xiàyǔ",
+                eng: "rain",
+                collocation: "要下雨",
+                ex: "明天要下雨。<br><small>It is going to rain tomorrow.</small>",
+                note: ""
+            },
+            {
+                char: "雨天",
+                pinyin: "yǔtiān",
+                eng: "rainy day",
+                collocation: "",
+                ex: "明天是雨天。<br><small>Tomorrow is a rainy day.</small>",
+                note: ""
+            },
+            {
+                char: "下雪",
+                pinyin: "xiàxuě",
+                eng: "snow",
+                collocation: "要下雪",
+                ex: "明天要下雪。<br><small>It is going to snow tomorrow.</small>",
+                note: ""
+            },
+            {
+                char: "雪天",
+                pinyin: "xuětiān",
+                eng: "snowy day",
+                collocation: "",
+                ex: "明天是雪天。<br><small>Tomorrow is a snowy day.</small>",
+                note: ""
+            },
+            {
+                char: "预报",
+                pinyin: "yùbào",
+                eng: "forecast",
+                collocation: "天气预报说……",
+                ex: "天气预报说明天天气不太好，要下雨。<br><small>The weather forecast says tomorrow’s weather will not be very good, and it will rain.</small>",
+                note: ""
+            },
+            {
+                char: "左右",
+                pinyin: "zuǒyòu",
+                eng: "about / around",
+                collocation: "sth. + 左右",
+                ex: "现在晚上八点左右。<br><small>It is about eight o’clock in the evening now.</small>",
+                note: "Use it after a number or time to mean ‘approximately’."
+            },
+            {
+                char: "还可以",
+                pinyin: "hái kěyǐ",
+                eng: "not bad / okay",
+                collocation: "",
+                ex: "A: 你的老板怎么样？<br>B: 还可以……<br><small>A: How is your boss?<br>B: Not bad…</small>",
+                note: ""
+            },
+            {
+                char: "一点儿也不",
+                pinyin: "yìdiǎnr yě bù",
+                eng: "not at all",
+                collocation: "",
+                ex: "A: 你喜欢冬天吗？<br>B: 一点儿也不！太冷了！<br><small>A: Do you like winter?<br>B: Not at all! It is too cold!</small>",
+                note: "A strong negative expression."
+            }
+        ],
+        radicals: [
+            {
+                r: "冫",
+                name: "两点水旁",
+                explanation: "This component is often related to coldness, low temperature, or icy ideas.",
+                chars: "冷、凉",
+                words: "冷 (cold) / 凉快 (cool)"
+            },
+            {
+                r: "日",
+                name: "日字旁",
+                explanation: "This component is often connected with the sun, light, warmth, or time.",
+                chars: "暖",
+                words: "暖和 (warm)"
+            },
+            {
+                r: "灬",
+                name: "火字底",
+                explanation: "This component is often related to fire, heat, or burning.",
+                chars: "热",
+                words: "热 (hot)"
+            }
+        ]
+    };
+
+    let currentIndex = 0;
+    let currentMode = 'list';
+    let flashMode = 'CN2EN';
+    const allCards = [...lessonData.vocab];
+
+    window.onload = function() {
+        renderList();
+        renderRadicals();
+        updateCard();
+        updateProgressFixed();
+
+        document.addEventListener('keydown', function(e) {
+            if (currentMode === 'card') {
+                if (e.key === 'ArrowRight') nextCard();
+                if (e.key === 'ArrowLeft') prevCard();
+                if (e.key === ' ' || e.key === 'Enter') {
+                    const card = document.querySelector('.flashcard');
+                    flipCard(card);
+                    e.preventDefault();
+                }
+            }
+        });
+    };
+
+    function switchMode(mode) {
+        currentMode = mode;
+
+        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.view-section').forEach(view => view.classList.remove('active'));
+
+        if (mode === 'list') {
+            document.querySelector('.nav-btn:nth-child(1)').classList.add('active');
+            document.getElementById('listView').classList.add('active');
+            document.getElementById('cardProgressFixed').style.display = 'none';
+        } else if (mode === 'radical') {
+            document.querySelector('.nav-btn:nth-child(2)').classList.add('active');
+            document.getElementById('radicalView').classList.add('active');
+            document.getElementById('cardProgressFixed').style.display = 'none';
+        } else {
+            document.querySelector('.nav-btn:nth-child(3)').classList.add('active');
+            document.getElementById('cardView').classList.add('active');
+            document.getElementById('cardProgressFixed').style.display = 'block';
+            updateProgressFixed();
+        }
+    }
+
+    function renderList() {
+        const vocabBody = document.getElementById('vocabListBody');
+        let vocabHtml = '';
+        lessonData.vocab.forEach(word => {
+            vocabHtml += `
+                <tr>
+                    <td class="chn-text">${word.char}</td>
+                    <td class="pinyin">${word.pinyin}</td>
+                    <td class="eng">${word.eng}</td>
+                    <td>${word.collocation || "—"}</td>
+                    <td>${word.ex}</td>
+                    <td>${word.note ? `<div class="note">${word.note}</div>` : "—"}</td>
+                </tr>
+            `;
+        });
+        vocabBody.innerHTML = vocabHtml;
+    }
+
+    function renderRadicals() {
+        const grid = document.getElementById('radicalGrid');
+        let html = "";
+        lessonData.radicals.forEach(item => {
+            html += `
+                <div class="radical-card">
+                    <div class="radical-head">
+                        <div class="radical">${item.r}</div>
+                        <div>
+                            <div class="radical-name">${item.name}</div>
+                            <div style="color:#888;font-weight:700;">Component / Radical</div>
+                        </div>
+                    </div>
+                    <div class="radical-line"><b>Explanation:</b> ${item.explanation}</div>
+                    <div class="radical-line"><b>Characters:</b> ${item.chars}</div>
+                    <div class="radical-line"><b>Words:</b> ${item.words}</div>
+                </div>
+            `;
+        });
+        grid.innerHTML = html;
+    }
+
+    function toggleFlashMode() {
+        flashMode = (flashMode === 'CN2EN') ? 'EN2CN' : 'CN2EN';
+        document.getElementById('modeLabel').innerText =
+            (flashMode === 'CN2EN') ? '中译英 (CN→EN)' : '英译中 (EN→CN)';
+        updateCard();
+    }
+
+    function updateCard() {
+        const item = allCards[currentIndex];
+
+        const frontMain = document.getElementById('cardFrontMain');
+        const frontSub  = document.getElementById('cardFrontSub');
+        const backSub = document.getElementById('cardBackSub');
+        const backEng = document.getElementById('cardBackEng');
+        const backEx  = document.getElementById('cardBackEx');
+        const card = document.querySelector('.flashcard');
+        card.classList.remove('is-flipped');
+
+        if (flashMode === 'CN2EN') {
+            frontMain.innerHTML = item.char;
+            frontSub.innerHTML  = item.pinyin;
+            backSub.innerHTML = item.pinyin;
+            backEng.innerHTML = item.eng + (item.collocation ? ` · ${item.collocation}` : "");
+            backEx.innerHTML  = item.ex + (item.note ? `<div class="note">${item.note}</div>` : "");
+        } else {
+            frontMain.innerHTML = item.eng;
+            frontSub.innerHTML  = item.collocation || "";
+            backSub.innerHTML = item.char + " · " + item.pinyin;
+            backEng.innerHTML = item.collocation ? "Collocation: " + item.collocation : " ";
+            backEx.innerHTML  = item.ex + (item.note ? `<div class="note">${item.note}</div>` : "");
+        }
+
+        updateProgressFixed();
+    }
+
+    function flipCard(card) {
+        card.classList.toggle('is-flipped');
+    }
+
+    function nextCard() {
+        currentIndex = (currentIndex < allCards.length - 1) ? currentIndex + 1 : 0;
+        updateCard();
+    }
+
+    function prevCard() {
+        currentIndex = (currentIndex > 0) ? currentIndex - 1 : allCards.length - 1;
+        updateCard();
+    }
+
+    function updateProgressFixed() {
+        document.getElementById('cardProgressFixed').innerText = `${currentIndex + 1} / ${allCards.length}`;
+    }
+</script>
+
+</body>
+</html>
